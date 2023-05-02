@@ -2,8 +2,11 @@ autopep8
 contourpy
 cycler
 fonttools
+imageio
 kiwisolver
+lazy_loader
 matplotlib
+networkx
 numpy
 opencv-python
 packaging
@@ -14,8 +17,11 @@ pycodestyle
 pyparsing
 python-dateutil
 pytz
+PyWavelets
+scikit-image
 scipy
 setuptools
 six
+tifffile
 tomli
 tzdata
