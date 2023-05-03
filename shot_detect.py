@@ -22,8 +22,8 @@ def save_all_frames(input_path, output_path):
     with open(input_path, 'rb') as f:
         while True:
 
-            data = np.fromfile(f, dtype=np.uint8, count=height*width*3)
-            if data.size < height*width*3:
+            data = np.fromfile(f, dtype=np.uint8, count=height * width * 3)
+            if data.size < height * width * 3:
                 return
 
             img = data.reshape((height, width, 3))
@@ -42,10 +42,10 @@ def subtract_moving_average(signal, window_size=10):
     for i in range(len(signal)):
         if i < window_size:
             # Use a centered moving average until we have enough samples
-            avg = sum(signal[:i+1]) / (i+1)
+            avg = sum(signal[: i + 1]) / (i + 1)
         else:
             # Use a trailing moving average once we have enough samples
-            avg = sum(signal[i-window_size+1:i+1]) / window_size
+            avg = sum(signal[i - window_size + 1 : i + 1]) / window_size
         moving_avg.append(avg)
     detrended_signal = [signal[i] - moving_avg[i] for i in range(len(signal))]
     return detrended_signal
@@ -57,22 +57,21 @@ def detect_shots(input_path):
 
     with open(input_path, 'rb') as f:
         print("Processing frame number: 1")
-        data = np.fromfile(f, dtype=np.uint8, count=height*width*3)
+        data = np.fromfile(f, dtype=np.uint8, count=height * width * 3)
         img = data.reshape((height, width, 3))
         img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
         prev2 = img
 
         print("Processing frame number: 2")
-        data = np.fromfile(f, dtype=np.uint8, count=height*width*3)
+        data = np.fromfile(f, dtype=np.uint8, count=height * width * 3)
         img = data.reshape((height, width, 3))
         img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
         prev = img
 
         count = 2
         while True:
-
-            data = np.fromfile(f, dtype=np.uint8, count=height*width*3)
-            if data.size < height*width*3:
+            data = np.fromfile(f, dtype=np.uint8, count=height * width * 3)
+            if data.size < height * width * 3:
                 break
 
             count += 1
@@ -82,7 +81,7 @@ def detect_shots(input_path):
             curr = img
             ssim_score = metrics.structural_similarity(
                 curr, prev2, multichannel=True, channel_axis=2)
-            ssim_list.append(1-ssim_score)
+            ssim_list.append(1 - ssim_score)
             prev2 = prev
             prev = curr
 
@@ -90,8 +89,7 @@ def detect_shots(input_path):
         # plt.plot(ssim_list)
 
         ssim_list = subtract_moving_average(ssim_list, 10)
-        peaks, properties = find_peaks(
-            ssim_list, height=0.15, prominence=0.1, distance=18)
+        peaks, properties = find_peaks(ssim_list, height=0.15, prominence=0.1, distance=18)
 
         # print(peaks)
         # print(properties)

@@ -11,11 +11,11 @@ class Shot:
     def __init__(self, start_frame=None, end_frame=None):
         self.start_frame = start_frame
         self.end_frame = end_frame
-        self.subShots = []
+        self.subshots = []
 
 
 def detect_scenes(input_path, shots, total_frames):
-    frame_size = height*width*3
+    frame_size = height * width * 3
     file_data = np.memmap(input_path, dtype=np.uint8, mode='r')
 
     # x_coords = []
@@ -29,42 +29,43 @@ def detect_scenes(input_path, shots, total_frames):
     for s in shots:
         prev_frame_number = s - 2
         start_index = (prev_frame_number - 1) * frame_size
-        img_data = file_data[start_index:start_index+frame_size].tobytes()
+        img_data = file_data[start_index : start_index + frame_size].tobytes()
         img = np.frombuffer(img_data, dtype=np.uint8)
-        img = img.reshape((height, width, 3))
-        img = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
-        prev = img
+        prev_rgb = img.reshape((height, width, 3))
+        prev_hsv = cv2.cvtColor(prev_rgb, cv2.COLOR_RGB2HSV)
 
         next_frame_number = s + 2
         start_index = (next_frame_number - 1) * frame_size
-        img_data = file_data[start_index:start_index+frame_size].tobytes()
+        img_data = file_data[start_index : start_index + frame_size].tobytes()
         img = np.frombuffer(img_data, dtype=np.uint8)
-        img = img.reshape((height, width, 3))
-        img = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
-        next = img
+        next_rgb = img.reshape((height, width, 3))
+        next_hsv = cv2.cvtColor(next_rgb, cv2.COLOR_RGB2HSV)
 
         # Calculate the color histograms for each frame
-        num_bins = 24
-        hist1 = cv2.calcHist([prev], [0, 1, 2], None, [
-            num_bins, num_bins, num_bins], [0, 256, 0, 256, 0, 256])
-        hist2 = cv2.calcHist([next], [0, 1, 2], None, [
-            num_bins, num_bins, num_bins], [0, 256, 0, 256, 0, 256])
+        rgb_hist1 = cv2.calcHist([prev_rgb], [0, 1, 2], None, [32, 32, 32], [0, 256, 0, 256, 0, 256])
+        rgb_hist2 = cv2.calcHist([next_rgb], [0, 1, 2], None, [32, 32, 32], [0, 256, 0, 256, 0, 256])
+        
+        hsv_hist1 = cv2.calcHist([prev_hsv], [0, 1, 2], None, [18, 32, 32], [0, 180, 0, 256, 0, 256])
+        hsv_hist2 = cv2.calcHist([next_hsv], [0, 1, 2], None, [18, 32, 32], [0, 180, 0, 256, 0, 256])
 
         # Normalize the histograms
-        hist1 = cv2.normalize(hist1, hist1).flatten()
-        hist2 = cv2.normalize(hist2, hist2).flatten()
+        rgb_hist1 = cv2.normalize(rgb_hist1, rgb_hist1).flatten()
+        rgb_hist2 = cv2.normalize(rgb_hist2, rgb_hist2).flatten()
+        
+        hsv_hist1 = cv2.normalize(hsv_hist1, hsv_hist1).flatten()
+        hsv_hist2 = cv2.normalize(hsv_hist2, hsv_hist2).flatten()
 
         # Calculate the Bhattacharyya distance between the histograms
-        bhattacharyya_distance = cv2.compareHist(
-            hist1, hist2, cv2.HISTCMP_BHATTACHARYYA)
+        bhattacharyya_rgb = cv2.compareHist(rgb_hist1, rgb_hist2, cv2.HISTCMP_BHATTACHARYYA)
+        bhattacharyya_hsv = cv2.compareHist(hsv_hist1, hsv_hist2, cv2.HISTCMP_BHATTACHARYYA)
 
-        curr_shot.end_frame = s-1
+        curr_shot.end_frame = s - 1
         curr_scene.append(curr_shot)
+        
+        curr_shot = Shot(s)
 
-        curr_shot = Shot()
-        curr_shot.start_frame = s
-
-        if bhattacharyya_distance >= 0.7:
+        # TODO: Compare rgb only, hsv only, or both 
+        if bhattacharyya_hsv >= 0.7:
             scenes.append(curr_scene)
             curr_scene = []
 
