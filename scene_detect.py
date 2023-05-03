@@ -1,5 +1,7 @@
 import numpy as np
 import cv2
+
+from detect_subshot import detect_subshots_wrapper
 from shot_detect import detect_shots
 
 # Define the fixed size of the image frame
@@ -88,6 +90,10 @@ def print_scenes(scenes):
         for shot in scene:
             print("Shot: {}, start: {}, end: {}".format(
                 shot_no, shot.start_frame, shot.end_frame))
+            subshot_no = 1
+            for subshot in shot.subshots:
+                print("Subshot: {}, frame: {}".format(subshot_no, subshot))
+                subshot_no += 1
             shot_no += 1
         scene_no += 1
 
@@ -110,4 +116,5 @@ input_path = './input/Ready_Player_One_rgb/InputVideo.rgb'
 shots, total_frames = detect_shots(input_path)
 
 scenes = detect_scenes(input_path, shots, total_frames)
+scenes = detect_subshots_wrapper(input_path, scenes)
 print_scenes(scenes)
