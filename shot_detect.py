@@ -68,14 +68,15 @@ def detect_shots(input_path):
         img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
         prev = img
 
-        count = 3
+        count = 2
         while True:
 
-            print("Processing frame number: {}".format(count))
             data = np.fromfile(f, dtype=np.uint8, count=height*width*3)
             if data.size < height*width*3:
                 break
 
+            count += 1
+            print("Processing frame number: {}".format(count))
             img = data.reshape((height, width, 3))
             img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
             curr = img
@@ -84,7 +85,6 @@ def detect_shots(input_path):
             ssim_list.append(1-ssim_score)
             prev2 = prev
             prev = curr
-            count += 1
 
         # plt.subplot(2, 1, 1)
         # plt.plot(ssim_list)
@@ -108,21 +108,5 @@ def detect_shots(input_path):
 
         # The frame numbers we return as shot boundaries should be
         # the first frame of the next shot
-        shots = [x + 2 for x in peaks]
-        return shots
-
-
-input_path = './input/Ready_Player_One_rgb/InputVideo.rgb'
-output_path = './output/Ready_Player_One_rgb/frames'
-
-# input_path = './input/The_Long_Dark_rgb/InputVideo.rgb'
-# output_path = './output/The_Long_Dark_rgb/frames'
-
-# input_path = './input/The_Great_Gatsby_rgb/InputVideo.rgb'
-# output_path = './output/The_Great_Gatsby_rgb/frames'
-
-# save_all_frames(input_path, output_path)
-
-# The shot boundaries indicate the first frame in the subsequent shot
-shots = detect_shots(input_path)
-print(shots)
+        shots = [x + 3 for x in peaks]
+        return shots, count
