@@ -25,3 +25,5 @@ six
 tifffile
 tomli
 tzdata
+python-vlc
+PyQt5
