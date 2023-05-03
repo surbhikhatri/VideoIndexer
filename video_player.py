@@ -4,6 +4,7 @@ import sys
 
 from PyQt5 import QtWidgets, QtGui, QtCore
 import vlc
+from scene_detect import detect_scenes
 
 
 class VideoPlayer(QtWidgets.QMainWindow):
@@ -23,10 +24,13 @@ class VideoPlayer(QtWidgets.QMainWindow):
         self.mediaplayer = self.instance.media_player_new()
         self.media = None
         
-        self.data = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+        # WIP: Currently hardcoded
+        self.input_path = './input/The_Long_Dark_rgb/InputVideo.rgb'
+        self.shots = [184, 314, 447, 621, 799, 933, 1101, 1237, 1322, 1412, 1499, 1587, 1768, 1944, 2027, 2116, 
+                      2209, 2298, 2387, 2474, 2651, 2827, 3001, 3176, 3411, 3684, 4060, 4287, 4668, 4958, 5653]
+        self.total_frames = 6276
         
-        self.scene_list = []
-        self.total_frames = 1000 # dummy data
+        self.scene_list = detect_scenes(self.input_path, self.shots, self.total_frames)
         
         self.curr_idx = 0
         self.is_paused = True
@@ -53,39 +57,35 @@ class VideoPlayer(QtWidgets.QMainWindow):
         self.tree.setColumnCount(1)
         self.tree.itemClicked.connect(self.handleItemClick)
 
+        # List of items store frame position
         self.item_list = []
         
-        # Dummy table of contents
-        for i, v in enumerate(self.data):
-            item = self.MyTreeWidgetItem(None, i, v)
-            item.setText(0, f'Shot {i}')
-            self.item_list.append(item)
-
-        # TODO: For productional use
+        tree_items = []
         content_idx = 0
         for i in range(len(self.scene_list)):
             scene_item = self.MyTreeWidgetItem(None, -1)
-            item.setText(0, f'Scene {i}')
-            for j, shot in enumerate(self.scene_list):
-                if len(shot.subshot_list) == 0:
-                    frame_position = shot.frame_number / self.total_frames
+            scene_item.setText(0, f'Scene {i}')
+            for j, shot in enumerate(self.scene_list[i]):
+                if len(shot.subshots) == 0:
+                    frame_position = shot.start_frame / self.total_frames
                     shot_item = self.MyTreeWidgetItem(None, content_idx, frame_position)
-                    item.setText(0, f'Shot {j}')
+                    shot_item.setText(0, f'Shot {j}')
                     self.item_list.append(shot_item)
                     content_idx += 1
                     scene_item.addChild(shot_item)
                 else:
                     shot_item = self.MyTreeWidgetItem(None, -1)
-                    for k, subshot_frame in enumerate(shot.subshot_list):
+                    for k, subshot_frame in enumerate(shot.subshots):
                         frame_position = subshot_frame / self.total_frames
                         subshot_item = self.MyTreeWidgetItem(None, content_idx, frame_position)
-                        item.setText(0, f'Subshot {k}')
+                        subshot_item.setText(0, f'Subshot {k}')
                         self.item_list.append(subshot_item)
                         shot_item.addChild(subshot_item)
                         content_idx += 1
                     scene_item.addChild(shot_item)
+            tree_items.append(scene_item)
             
-        self.tree.insertTopLevelItems(0, self.item_list)
+        self.tree.insertTopLevelItems(0, tree_items)
         self.tree.expandAll()
 
         # VLC player frame
@@ -151,7 +151,7 @@ class VideoPlayer(QtWidgets.QMainWindow):
 
     def stop(self):
         self.pause()
-        self.mediaplayer.set_position(self.data[self.curr_idx])
+        self.mediaplayer.set_position(self.item_list[self.curr_idx].frame_position)
 
 
     def open_file(self):
