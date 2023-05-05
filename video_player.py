@@ -56,23 +56,33 @@ class VideoPlayer(QtWidgets.QMainWindow):
         content_idx = 0
         for i in range(len(self.scene_list)):
             scene_item = self.MyTreeWidgetItem(None, -1)
-            scene_item.setText(0, f'Scene {i}')
+            scene_item.setText(0, f'Scene {i + 1}')
             for j, shot in enumerate(self.scene_list[i]):
                 if len(shot.subshots) == 0:
                     frame_position = shot.start_frame / self.total_frames
                     shot_item = self.MyTreeWidgetItem(
                         None, content_idx, frame_position)
-                    shot_item.setText(0, f'Shot {j}')
+                    shot_item.setText(0, f'Shot {j + 1}')
                     self.item_list.append(shot_item)
                     content_idx += 1
                     scene_item.addChild(shot_item)
                 else:
                     shot_item = self.MyTreeWidgetItem(None, -1)
+                    shot_item.setText(0, f'Shot {j + 1}')
+
+                    # Add first subshot from the starting frame of the shot
+                    frame_position = shot.start_frame / self.total_frames
+                    subshot_item = self.MyTreeWidgetItem(
+                        None, content_idx, frame_position)
+                    subshot_item.setText(0, 'Subshot 1')
+                    self.item_list.append(subshot_item)
+                    shot_item.addChild(subshot_item)
+
                     for k, subshot_frame in enumerate(shot.subshots):
                         frame_position = subshot_frame / self.total_frames
                         subshot_item = self.MyTreeWidgetItem(
                             None, content_idx, frame_position)
-                        subshot_item.setText(0, f'Subshot {k}')
+                        subshot_item.setText(0, f'Subshot {k+1}')
                         self.item_list.append(subshot_item)
                         shot_item.addChild(subshot_item)
                         content_idx += 1
@@ -123,7 +133,7 @@ class VideoPlayer(QtWidgets.QMainWindow):
 
         # Timer to trigger the UI update
         self.timer = QtCore.QTimer(self)
-        self.timer.setInterval(100)
+        self.timer.setInterval(50)
         self.timer.timeout.connect(self.update_ui)
 
     def play(self):
