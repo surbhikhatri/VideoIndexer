@@ -4,47 +4,39 @@ import sys
 
 from PyQt5 import QtWidgets, QtGui, QtCore
 import vlc
-from scene_detect import detect_scenes
 
 
 class VideoPlayer(QtWidgets.QMainWindow):
-    
+
     class MyTreeWidgetItem(QtWidgets.QTreeWidgetItem):
         def __init__(self, parent=None, idx=0, frame_position=0):
             super().__init__(parent)
             self.idx = idx
             self.frame_position = frame_position
-        
-    
-    def __init__(self, master=None):
+
+    def __init__(self, master=None, scenes=None, total_frames=0):
         QtWidgets.QMainWindow.__init__(self, master)
         self.setWindowTitle("Interactive Media Player")
 
         self.instance = vlc.Instance()
         self.mediaplayer = self.instance.media_player_new()
         self.media = None
-        
-        # WIP: Currently hardcoded
-        self.input_path = './input/The_Long_Dark_rgb/InputVideo.rgb'
-        self.shots = [184, 314, 447, 621, 799, 933, 1101, 1237, 1322, 1412, 1499, 1587, 1768, 1944, 2027, 2116, 
-                      2209, 2298, 2387, 2474, 2651, 2827, 3001, 3176, 3411, 3684, 4060, 4287, 4668, 4958, 5653]
-        self.total_frames = 6276
-        
-        self.scene_list = detect_scenes(self.input_path, self.shots, self.total_frames)
-        
+
+        self.scene_list = scenes
+        self.total_frames = total_frames
+
         self.curr_idx = 0
         self.is_paused = True
-        
+
         self.highlight = QtGui.QBrush(QtGui.QColor(205, 232, 255, 255))
         self.no_highlight = QtGui.QBrush(QtGui.QColor(205, 232, 255, 0))
-        
+
         self.create_ui()
-        
 
     def create_ui(self):
         self.widget = QtWidgets.QWidget(self)
         self.setCentralWidget(self.widget)
-        
+
         # File menu
         menu_bar = self.menuBar()
         file_menu = menu_bar.addMenu("File")
@@ -59,7 +51,7 @@ class VideoPlayer(QtWidgets.QMainWindow):
 
         # List of items store frame position
         self.item_list = []
-        
+
         tree_items = []
         content_idx = 0
         for i in range(len(self.scene_list)):
@@ -68,7 +60,8 @@ class VideoPlayer(QtWidgets.QMainWindow):
             for j, shot in enumerate(self.scene_list[i]):
                 if len(shot.subshots) == 0:
                     frame_position = shot.start_frame / self.total_frames
-                    shot_item = self.MyTreeWidgetItem(None, content_idx, frame_position)
+                    shot_item = self.MyTreeWidgetItem(
+                        None, content_idx, frame_position)
                     shot_item.setText(0, f'Shot {j}')
                     self.item_list.append(shot_item)
                     content_idx += 1
@@ -77,14 +70,15 @@ class VideoPlayer(QtWidgets.QMainWindow):
                     shot_item = self.MyTreeWidgetItem(None, -1)
                     for k, subshot_frame in enumerate(shot.subshots):
                         frame_position = subshot_frame / self.total_frames
-                        subshot_item = self.MyTreeWidgetItem(None, content_idx, frame_position)
+                        subshot_item = self.MyTreeWidgetItem(
+                            None, content_idx, frame_position)
                         subshot_item.setText(0, f'Subshot {k}')
                         self.item_list.append(subshot_item)
                         shot_item.addChild(subshot_item)
                         content_idx += 1
                     scene_item.addChild(shot_item)
             tree_items.append(scene_item)
-            
+
         self.tree.insertTopLevelItems(0, tree_items)
         self.tree.expandAll()
 
@@ -103,7 +97,7 @@ class VideoPlayer(QtWidgets.QMainWindow):
 
         # Player controls
         self.hbuttonbox = QtWidgets.QHBoxLayout()
-        
+
         self.playbtn = QtWidgets.QPushButton("Play")
         self.hbuttonbox.addWidget(self.playbtn)
         self.playbtn.clicked.connect(self.play)
@@ -132,7 +126,6 @@ class VideoPlayer(QtWidgets.QMainWindow):
         self.timer.setInterval(100)
         self.timer.timeout.connect(self.update_ui)
 
-
     def play(self):
         if not self.mediaplayer.is_playing():
             if self.mediaplayer.play() == -1:
@@ -141,27 +134,29 @@ class VideoPlayer(QtWidgets.QMainWindow):
                 self.is_paused = False
                 self.timer.start()
 
-
     def pause(self):
         if self.mediaplayer.is_playing():
             self.mediaplayer.pause()
             self.is_paused = True
             self.timer.stop()
 
-
     def stop(self):
         self.pause()
-        self.mediaplayer.set_position(self.item_list[self.curr_idx].frame_position)
+        self.mediaplayer.set_position(
+            self.item_list[self.curr_idx].frame_position)
 
-
-    def open_file(self):
-        dialog = "Choose Media File"
-        filename = QtWidgets.QFileDialog.getOpenFileName(self, dialog, os.path.expanduser('~'))
-        
+    def open_file(self, filename=None):
         if not filename:
-            return
+            dialog = "Choose Media File"
+            filename = QtWidgets.QFileDialog.getOpenFileName(
+                self, dialog, os.path.expanduser('~'))
 
-        self.media = self.instance.media_new(filename[0])
+            if not filename:
+                print("Error. No file chosen to be loaded.")
+                return
+            filename = filename[0]
+
+        self.media = self.instance.media_new(filename)
         self.mediaplayer.set_media(self.media)
         self.media.parse()
         self.setWindowTitle(self.media.get_meta(0))
@@ -173,32 +168,30 @@ class VideoPlayer(QtWidgets.QMainWindow):
             self.mediaplayer.set_hwnd(int(self.videoframe.winId()))
         elif platform.system() == "Darwin":
             self.mediaplayer.set_nsobject(int(self.videoframe.winId()))
-            
+
         self.item_list[self.curr_idx].setBackground(0, self.highlight)
 
         self.play()
-        
 
     def update_ui(self):
         if not self.mediaplayer.is_playing():
             self.timer.stop()
             return
-            
+
         curr_position = self.mediaplayer.get_position()
-        
+
         if len(self.item_list) > self.curr_idx + 1 and curr_position >= self.item_list[self.curr_idx + 1].frame_position:
             self.item_list[self.curr_idx].setBackground(0, self.no_highlight)
             self.curr_idx += 1
             self.item_list[self.curr_idx].setBackground(0, self.highlight)
-            
-            
+
     def handleItemClick(self, item, col):
         self.item_list[self.curr_idx].setBackground(0, self.no_highlight)
         self.curr_idx = item.idx
         self.mediaplayer.set_position(item.frame_position)
         item.setBackground(0, self.highlight)
         item.setSelected(False)
-    
+
 
 def main():
     app = QtWidgets.QApplication(sys.argv)

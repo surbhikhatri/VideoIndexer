@@ -46,20 +46,16 @@ def detect_subshots_v2(start_frame, end_frame, fps, audio_path):
     # distance between the peaks
     ndiffs = np.insert(diffs, 1, 0.1)
     ndiffs = np.insert(ndiffs, len(ndiffs)-1, 1)
-    # print(len(ndiffs))
-    # print(ndiffs)
 
     # We need peaks to be at least 3 seconds apart
     distance = int(float(3) / float(window_size))
     peaks, properties = find_peaks(ndiffs, height=0.004, distance=distance)
-    # print(peaks)
 
     # Ignore the first and the last peaks to get the actual peaks.
     # We also subtract 1, because when we added a peak in the beginning,
     # we would have offset the indices by 1.
     actual_peaks = peaks[1:len(peaks) - 1]
     actual_peaks = [x - 1 for x in actual_peaks]
-    # print(actual_peaks)
 
     subshot_frames = []
     for p in actual_peaks:
