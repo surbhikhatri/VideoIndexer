@@ -17,5 +17,6 @@ the audio segment for each shot in one second windows and compute the difference
 average amplitude of the audio. We then use signal processing techniques to detect
 the required peaks which define instances which divide a shot into multiple sub-shots.
 
-Demo Gif
+Demo Gif  
+
 ![](https://github.com/surbhikhatri/VideoIndexer/blob/main/demo.gif)
