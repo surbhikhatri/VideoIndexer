@@ -77,12 +77,13 @@ class VideoPlayer(QtWidgets.QMainWindow):
                     subshot_item.setText(0, 'Subshot 1')
                     self.item_list.append(subshot_item)
                     shot_item.addChild(subshot_item)
+                    content_idx += 1
 
                     for k, subshot_frame in enumerate(shot.subshots):
                         frame_position = subshot_frame / self.total_frames
                         subshot_item = self.MyTreeWidgetItem(
                             None, content_idx, frame_position)
-                        subshot_item.setText(0, f'Subshot {k+1}')
+                        subshot_item.setText(0, f'Subshot {k+2}')
                         self.item_list.append(subshot_item)
                         shot_item.addChild(subshot_item)
                         content_idx += 1
